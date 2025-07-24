@@ -3,6 +3,7 @@ import csv
 import os
 from datetime import datetime
 import pandas as pd
+import io
 
 st.title("🧠 MindMirror: Mental Health Check")
 
@@ -20,12 +21,14 @@ questions = [
     "I find it hard to concentrate or make decisions."
 ]
 
-options = ["Never", "Sometimes", "Often"]
+options = ["Never", "Rarely", "Sometimes", "Often", "Always"]
 
 score_mapping = {
     "Never": 0,
-    "Sometimes": 1,
-    "Often": 2
+    "Rarely": 1,
+    "Sometimes": 2,
+    "Often": 3,
+    "Always": 4
 }
 
 answers = []
@@ -37,15 +40,15 @@ for i, q in enumerate(questions):
 if st.button("🔍 Get My Mental Health Score"):
     score = sum([score_mapping[ans] for ans in answers])
 
-    if score <= 2:
+    if score <= 5:
         suggestion = "You're doing well, but keep checking in with yourself. 😊"
-    elif score <= 5:
+    elif score <= 10:
         suggestion = "You're facing some stress. Consider healthy habits or talk to someone you trust. 💬"
     else:
         suggestion = "You might be struggling. Please consider talking to a therapist or support group. ❤️"
 
     st.subheader("🧠 Your Mental Health Score")
-    st.write(f"**{score} / 10**")
+    st.write(f"**{score} / 20**")
     st.write(suggestion)
 
     # Optional feedback box
@@ -72,7 +75,8 @@ if st.checkbox("🔐 Admin: Show User Logs"):
 if st.checkbox("⬇️ Download Log CSV"):
     try:
         df = pd.read_csv("user_data_log.csv")
+        df.columns = ["Timestamp", "Answers", "Score", "Suggestion", "Feedback"]
         csv = df.to_csv(index=False).encode('utf-8')
         st.download_button("Download CSV", csv, "user_data_log.csv", "text/csv")
     except FileNotFoundError:
-        st.warning("CSV not found.")
+        st.warning("No CSV file found.")

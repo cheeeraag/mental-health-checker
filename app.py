@@ -37,21 +37,13 @@ def get_suggestion(score):
         return "🔴 You're likely facing high mental distress. Please consult a licensed therapist if possible."
 
 # Logging function
-def log_user_response(answers, score, suggestion, feedback):
+def log_user_response(answers, score, suggestion):
     with open("user_data_log.csv", mode="a", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), answers, score, suggestion, feedback])
+        writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), answers, score, suggestion])
 
 if st.button("🧾 Submit"):
     suggestion = get_suggestion(score)
-    feedback = st.text_area("💬 Optional: Share how you're feeling or any thoughts you want to express anonymously")
     log_user_response(answers, score, suggestion)
     st.markdown(f"### 🧮 Your Mental Health Score: `{score}/15`")
     st.success(suggestion)
-
-import pandas as pd
-if st.checkbox("🔐 Admin: Show User Logs"):
-    df = pd.read_csv("user_data_log.csv", header=None)
-    df.columns = ["Timestamp", "Answers", "Score", "Suggestion", "Feedback"]
-    st.dataframe(df)
-    st.line_chart(df["Score"])

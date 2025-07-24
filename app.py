@@ -59,11 +59,12 @@ if submitted:
     st.success("✅ Your response has been recorded anonymously. Thank you!")
 
 # CSV download section
-if st.checkbox("⬇️ Download Log CSV"):
+# Admin section to view responses
+st.markdown("---")
+if st.checkbox("👀 View All Responses (Admin Only)"):
     try:
         df = pd.read_csv("user_data_log.csv", header=None)
         df.columns = ["Timestamp", "Answers", "Score", "Suggestion", "Feedback"]
-        csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button("📥 Download CSV", csv, "user_data_log.csv", "text/csv")
+        st.dataframe(df)
     except FileNotFoundError:
-        st.warning("No CSV file found.")
+        st.warning("No response data available yet.")

@@ -1,82 +1,79 @@
 import streamlit as st
-import csv
-import os
-from datetime import datetime
 import pandas as pd
-import io
+import datetime
 
-st.title("🧠 MindMirror: Mental Health Check")
+st.set_page_config(page_title="MindMirror", page_icon="🧠")
 
-st.markdown("""
-Welcome to **MindMirror** — a simple, private tool to check in on your mental health.
-Answer the following questions honestly. This is not a diagnosis but a quick mental wellness reflection.
-""")
+st.title("🧠 MindMirror: Mental Health Self-Check")
 
-# Sample Questions (To be finalized by licensed psychologists)
-questions = [
-    "I’ve been feeling low, down, or hopeless.",
-    "I’ve lost interest in activities I usually enjoy.",
-    "I feel tired or have little energy.",
-    "I struggle with sleep (too much or too little).",
-    "I find it hard to concentrate or make decisions."
+st.markdown("Take this short self-assessment to reflect on your current mental state. It's completely anonymous and free.")
+
+# Updated multiple-choice options (more granular)
+options = [
+    "A. Never",
+    "B. Rarely",
+    "C. Sometimes",
+    "D. Often",
+    "E. Almost Always"
 ]
 
-options = ["Never", "Rarely", "Sometimes", "Often", "Always"]
+# Sample questions (can be updated after psychologist review)
+questions = [
+    "Do you feel overwhelmed or anxious frequently?",
+    "Are you able to sleep well most nights?",
+    "Do you enjoy activities you used to enjoy?",
+    "Do you feel hopeful about the future?",
+    "Do you find it hard to concentrate or stay focused?"
+]
 
-score_mapping = {
-    "Never": 0,
-    "Rarely": 1,
-    "Sometimes": 2,
-    "Often": 3,
-    "Always": 4
-}
+# --- Form Begins ---
+with st.form("mental_health_form"):
+    st.markdown("### 📝 Self-Assessment")
 
-answers = []
+    answers = []
+    for i, q in enumerate(questions, 1):
+        ans = st.radio(f"{i}. {q}", options, key=f"q{i}")
+        answers.append(ans)
 
-for i, q in enumerate(questions):
-    answer = st.radio(f"{i+1}. {q}", options, key=i)
-    answers.append(answer)
+    feedback = st.text_area("💬 Would you like to share any feedback or thoughts?", "")
 
-if st.button("🔍 Get My Mental Health Score"):
-    score = sum([score_mapping[ans] for ans in answers])
+    submitted = st.form_submit_button("Submit")
 
-    if score <= 5:
-        suggestion = "You're doing well, but keep checking in with yourself. 😊"
-    elif score <= 10:
-        suggestion = "You're facing some stress. Consider healthy habits or talk to someone you trust. 💬"
-    else:
-        suggestion = "You might be struggling. Please consider talking to a therapist or support group. ❤️"
+    if submitted:
+        score = sum([options.index(ans) for ans in answers])  # 0 to 20
 
-    st.subheader("🧠 Your Mental Health Score")
-    st.write(f"**{score} / 20**")
-    st.write(suggestion)
+        # Generate suggestion
+        if score <= 5:
+            suggestion = "✅ You're doing great! Keep maintaining your mental well-being."
+        elif score <= 10:
+            suggestion = "🙂 You're okay, but some self-care or reflection may help."
+        elif score <= 15:
+            suggestion = "⚠️ You may be experiencing mild stress. Try talking to someone you trust."
+        else:
+            suggestion = "🚨 Consider seeking support from a professional or counselor."
 
-    # Optional feedback box
-    feedback = st.text_area("💬 Optional: Share how you're feeling or any thoughts you want to express anonymously")
+        # Show result to user
+        st.markdown(f"### 🧾 Result: **{suggestion}**")
 
-    # Save data to CSV
-    file_exists = os.path.isfile("user_data_log.csv")
-    with open("user_data_log.csv", mode='a', newline='') as file:
-        writer = csv.writer(file)
-        if not file_exists:
-            writer.writerow(["Timestamp", "Answers", "Score", "Suggestion", "Feedback"])
-        writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), answers, score, suggestion, feedback])
+        # Save to CSV
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open("user_data_log.csv", "a") as f:
+            f.write(f"{timestamp},{answers},{score},{suggestion},{feedback}\n")
 
-# Admin view
+        st.success("✅ Your response has been recorded anonymously. Thank you!")
+# --- Form Ends ---
+
+# Admin Panel to View Logs
+st.markdown("---")
 if st.checkbox("🔐 Admin: Show User Logs"):
     try:
-        df = pd.read_csv("user_data_log.csv")
-        st.dataframe(df)
-        st.line_chart(df["Score"])
-    except FileNotFoundError:
-        st.warning("No data available yet.")
-
-# Optional download
-if st.checkbox("⬇️ Download Log CSV"):
-    try:
-        df = pd.read_csv("user_data_log.csv")
+        df = pd.read_csv("user_data_log.csv", header=None)
         df.columns = ["Timestamp", "Answers", "Score", "Suggestion", "Feedback"]
+        st.dataframe(df)
+
+        # CSV download
         csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button("Download CSV", csv, "user_data_log.csv", "text/csv")
+        st.download_button("⬇️ Download CSV", csv, "user_data_log.csv", "text/csv")
+
     except FileNotFoundError:
-        st.warning("No CSV file found.")
+        st.warning("No user data available yet.")

@@ -1,82 +1,49 @@
 import streamlit as st
-import csv
-import os
-from datetime import datetime
-import pandas as pd
-import io
 
-st.title("🧠 MindMirror: Mental Health Check")
+# ------------------ Page Config ------------------
+st.set_page_config(page_title="Mental Health Score Checker", page_icon="🧠", layout="centered")
+st.title("🧠 Mental Health Score Checker")
+st.write("Welcome! This tool helps you reflect on your current mental state and gives simple suggestions. Your answers stay private.")
 
-st.markdown("""
-Welcome to **MindMirror** — a simple, private tool to check in on your mental health.
-Answer the following questions honestly. This is not a diagnosis but a quick mental wellness reflection.
-""")
+# ------------------ Placeholder Questions ------------------
+st.subheader("Answer the following questions:")
 
-# Sample Questions (To be finalized by licensed psychologists)
 questions = [
-    "I’ve been feeling low, down, or hopeless.",
-    "I’ve lost interest in activities I usually enjoy.",
-    "I feel tired or have little energy.",
-    "I struggle with sleep (too much or too little).",
-    "I find it hard to concentrate or make decisions."
+    "1. How often do you feel anxious or on edge?",
+    "2. Do you feel motivated to do daily tasks?",
+    "3. Are you able to focus on studies/work without getting distracted?",
+    "4. How well are you sleeping?",
+    "5. Do you feel connected to people around you?"
 ]
 
 options = ["Never", "Rarely", "Sometimes", "Often", "Always"]
 
-score_mapping = {
-    "Never": 0,
-    "Rarely": 1,
-    "Sometimes": 2,
-    "Often": 3,
-    "Always": 4
-}
+responses = []
 
-answers = []
+for q in questions:
+    answer = st.radio(q, options, key=q)
+    responses.append(answer)
 
-for i, q in enumerate(questions):
-    answer = st.radio(f"{i+1}. {q}", options, key=i)
-    answers.append(answer)
+# ------------------ Scoring Logic ------------------
+def calculate_score(answers):
+    score_map = {"Never": 0, "Rarely": 1, "Sometimes": 2, "Often": 3, "Always": 4}
+    return sum(score_map[a] for a in answers)
 
-if st.button("🔍 Get My Mental Health Score"):
-    score = sum([score_mapping[ans] for ans in answers])
-
-    if score <= 5:
-        suggestion = "You're doing well, but keep checking in with yourself. 😊"
-    elif score <= 10:
-        suggestion = "You're facing some stress. Consider healthy habits or talk to someone you trust. 💬"
+# ------------------ Suggestions ------------------
+def get_suggestion(score):
+    if score >= 17:
+        return ("✅ You're doing quite well! Keep up the healthy habits, and don’t hesitate to check in with yourself often.")
+    elif score >= 10:
+        return ("⚠️ You’re doing okay, but there are signs of stress. Try journaling, talking to a friend, or taking regular breaks.")
     else:
-        suggestion = "You might be struggling. Please consider talking to a therapist or support group. ❤️"
+        return ("🚨 You might be struggling right now. Consider reaching out to a counselor or a trusted adult. You're not alone.")
 
-    st.subheader("🧠 Your Mental Health Score")
-    st.write(f"**{score} / 20**")
-    st.write(suggestion)
+# ------------------ Display Result ------------------
+if st.button("Check My Score"):
+    total_score = calculate_score(responses)
+    st.markdown(f"### 🧾 Your Score: {total_score} / 20")
+    suggestion = get_suggestion(total_score)
+    st.info(suggestion)
 
-    # Optional feedback box
-    feedback = st.text_area("💬 Optional: Share how you're feeling or any thoughts you want to express anonymously")
-
-    # Save data to CSV
-    file_exists = os.path.isfile("user_data_log.csv")
-    with open("user_data_log.csv", mode='a', newline='') as file:
-        writer = csv.writer(file)
-        if not file_exists:
-            writer.writerow(["Timestamp", "Answers", "Score", "Suggestion", "Feedback"])
-        writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), answers, score, suggestion, feedback])
-
-# Admin view
-if st.checkbox("🔐 Admin: Show User Logs"):
-    try:
-        df = pd.read_csv("user_data_log.csv")
-        st.dataframe(df)
-        st.line_chart(df["Score"])
-    except FileNotFoundError:
-        st.warning("No data available yet.")
-
-# Optional download
-if st.checkbox("⬇️ Download Log CSV"):
-    try:
-        df = pd.read_csv("user_data_log.csv")
-        df.columns = ["Timestamp", "Answers", "Score", "Suggestion", "Feedback"]
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button("Download CSV", csv, "user_data_log.csv", "text/csv")
-    except FileNotFoundError:
-        st.warning("No CSV file found.")
+    st.markdown("---")
+    st.markdown("_This is not a medical diagnosis. For serious concerns, please consult a licensed mental health professional._")

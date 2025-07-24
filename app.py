@@ -1,78 +1,57 @@
 import streamlit as st
-import pandas as pd
 from datetime import datetime
-import os
+import csv
 
-st.set_page_config(page_title="MindMirror", page_icon="🧠")
+st.set_page_config(page_title="Mental Health Checker", layout="centered")
 
-st.title("🧠 MindMirror – Mental Health Check")
+st.title("🧠 Mental Health Checker")
+st.markdown("Answer the following questions to check your current mental health status. This is **anonymous** and just for awareness.")
 
-# Questions and Options
-questions = [
-    "How often do you feel overwhelmed or stressed lately?",
-    "Do you find it hard to get out of bed or complete daily tasks?",
-    "Are you able to enjoy things you used to like?",
-    "Do you feel lonely even when you're not alone?",
-    "How often do you find your thoughts racing at night?",
-    "Have you experienced changes in sleep or appetite recently?",
-    "Do you feel motivated about your future?",
-    "How often do you feel irritable or angry without clear reason?",
-    "Do you feel like your emotions are hard to control?",
-    "Do you avoid social situations or responsibilities lately?",
-]
+# Placeholder questions (replace with final ones later)
+q1 = st.selectbox("1. How often do you feel overwhelmed?", ["Never", "Sometimes", "Often", "Always"])
+q2 = st.selectbox("2. How well are you sleeping these days?", ["Very well", "Okay", "Poorly", "Barely sleeping"])
+q3 = st.selectbox("3. Do you enjoy your daily routine?", ["Yes", "Somewhat", "Rarely", "Not at all"])
+q4 = st.selectbox("4. How often do you feel anxious or sad?", ["Rarely", "Occasionally", "Frequently", "Constantly"])
+q5 = st.selectbox("5. Do you feel connected to people around you?", ["Yes", "Somewhat", "Not really", "Very isolated"])
 
-options = {
-    "A": ("Almost always", 2),
-    "B": ("Sometimes", 1),
-    "C": ("Rarely/Never", 0)
+# Scoring logic (adjust later with expert-backed values)
+score_map = {
+    "Never": 0, "Very well": 0, "Yes": 0, "Rarely": 0,
+    "Sometimes": 1, "Okay": 1, "Somewhat": 1, "Occasionally": 1,
+    "Often": 2, "Poorly": 2, "Rarely": 2, "Not really": 2,
+    "Always": 3, "Barely sleeping": 3, "Not at all": 3, "Constantly": 3, "Very isolated": 3
 }
 
-st.markdown("### 📝 Answer the following questions:")
+answers = [q1, q2, q3, q4, q5]
+score = sum(score_map[ans] for ans in answers)
 
-user_answers = []
-total_score = 0
-
-for i, q in enumerate(questions):
-    st.write(f"**Q{i+1}. {q}**")
-    selected = st.radio(
-        f"Question {i+1}", 
-        [f"{key}: {text}" for key, (text, _) in options.items()],
-        key=f"q{i}"
-    )
-    user_answers.append(selected[0])
-    total_score += options[selected[0]][1]
-
-# Feedback Text Input
-st.markdown("### 💬 Any feedback or suggestion?")
-user_feedback = st.text_area("We’d love to hear from you!", placeholder="Your thoughts here...")
-
-# Submit Button
-if st.button("🚀 Submit"):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    # Suggestion based on score
-    if total_score <= 5:
-        suggestion = "You're doing fine. Keep taking care of yourself! 🌿"
-    elif total_score <= 12:
-        suggestion = "Moderate signs of stress. Consider talking to someone or using mindfulness. 🤝"
+# Function to suggest based on score
+def get_suggestion(score):
+    if score <= 5:
+        return "✅ You're doing well. Stay self-aware and consistent."
+    elif score <= 10:
+        return "🟡 You're showing early signs of stress. Try mindfulness, journaling, or talking to someone."
+    elif score <= 15:
+        return "🟠 You may be struggling. Consider taking breaks, setting boundaries, or speaking to a peer counselor."
     else:
-        suggestion = "You may be facing high mental pressure. Professional help is advised. 💬"
+        return "🔴 You're likely facing high mental distress. Please consult a licensed therapist if possible."
 
-    st.success(f"✅ Your Mental Health Score: **{total_score}/20**")
-    st.info(suggestion)
+# Logging function
+def log_user_response(answers, score, suggestion, feedback):
+    with open("user_data_log.csv", mode="a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([datetime.now().strftime('%Y-%m-%d %H:%M:%S'), answers, score, suggestion, feedback])
 
-    # Save to CSV
-    data = [timestamp, ",".join(user_answers), total_score, suggestion, user_feedback]
-    with open("user_data_log.csv", "a") as f:
-        f.write(",".join([str(x) for x in data]) + "\n")
+if st.button("🧾 Submit"):
+    suggestion = get_suggestion(score)
+    feedback = st.text_area("💬 Optional: Share how you're feeling or any thoughts you want to express anonymously")
+    log_user_response(answers, score, suggestion)
+    st.markdown(f"### 🧮 Your Mental Health Score: `{score}/15`")
+    st.success(suggestion)
 
-# Admin View
-st.markdown("---")
-if st.checkbox("👀 View All Responses (Admin Only)"):
-    if os.path.exists("user_data_log.csv"):
-        df = pd.read_csv("user_data_log.csv", header=None)
-        df = df.iloc[:, :5]
-        df.columns = ["Timestamp", "Answers", "Score", "Suggestion", "Feedback"]
-        st.dataframe(df)
-    else:
-        st.info("No response data available yet.")
+import pandas as pd
+if st.checkbox("🔐 Admin: Show User Logs"):
+    df = pd.read_csv("user_data_log.csv", header=None)
+    df.columns = ["Timestamp", "Answers", "Score", "Suggestion", "Feedback"]
+    st.dataframe(df)
+    st.line_chart(df["Score"])

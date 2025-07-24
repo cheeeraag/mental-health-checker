@@ -1,70 +1,78 @@
 import streamlit as st
 import pandas as pd
-import datetime
-import io
+from datetime import datetime
+import os
 
-st.set_page_config(page_title="🧠 Mental Health Score Predictor", layout="centered")
+st.set_page_config(page_title="MindMirror", page_icon="🧠")
 
-st.title("🧠 Mental Health Check")
-st.markdown("Welcome! Answer the questions below to check in on your mental health. It's anonymous and free.")
+st.title("🧠 MindMirror – Mental Health Check")
 
+# Questions and Options
 questions = [
-    "I have felt down, depressed, or hopeless.",
-    "I have little interest or pleasure in doing things.",
-    "I feel nervous, anxious, or on edge.",
-    "I find it difficult to control worrying.",
-    "I feel tired or have little energy.",
-    "I have trouble falling or staying asleep.",
-    "I feel bad about myself or that I'm a failure.",
-    "I have trouble concentrating on tasks.",
-    "I feel alone or isolated.",
-    "I have thoughts that I would be better off not existing."
+    "How often do you feel overwhelmed or stressed lately?",
+    "Do you find it hard to get out of bed or complete daily tasks?",
+    "Are you able to enjoy things you used to like?",
+    "Do you feel lonely even when you're not alone?",
+    "How often do you find your thoughts racing at night?",
+    "Have you experienced changes in sleep or appetite recently?",
+    "Do you feel motivated about your future?",
+    "How often do you feel irritable or angry without clear reason?",
+    "Do you feel like your emotions are hard to control?",
+    "Do you avoid social situations or responsibilities lately?",
 ]
 
-options = ["A. Never", "B. Rarely", "C. Sometimes", "D. Often", "E. Almost Always"]
+options = {
+    "A": ("Almost always", 2),
+    "B": ("Sometimes", 1),
+    "C": ("Rarely/Never", 0)
+}
 
-with st.form("mental_health_form"):
-    answers = []
-    for i, question in enumerate(questions):
-        ans = st.radio(f"**{i+1}. {question}**", options, key=f"q{i}")
-        answers.append(ans)
+st.markdown("### 📝 Answer the following questions:")
 
-    feedback = st.text_area("💬 Optional Feedback (Tell us what you think or suggest improvements):", key="feedback")
-    submitted = st.form_submit_button("📩 Submit")
+user_answers = []
+total_score = 0
 
-if submitted:
-    # Calculate score
-    score = sum([options.index(ans) for ans in answers])
+for i, q in enumerate(questions):
+    st.write(f"**Q{i+1}. {q}**")
+    selected = st.radio(
+        f"Question {i+1}", 
+        [f"{key}: {text}" for key, (text, _) in options.items()],
+        key=f"q{i}"
+    )
+    user_answers.append(selected[0])
+    total_score += options[selected[0]][1]
 
-    # Generate suggestion
-    if score <= 10:
-        suggestion = "✅ You're doing great! Keep maintaining your mental well-being."
-    elif score <= 20:
-        suggestion = "🙂 You're okay, but some self-care or reflection may help."
-    elif score <= 30:
-        suggestion = "⚠️ You may be experiencing mild stress. Try talking to someone you trust."
+# Feedback Text Input
+st.markdown("### 💬 Any feedback or suggestion?")
+user_feedback = st.text_area("We’d love to hear from you!", placeholder="Your thoughts here...")
+
+# Submit Button
+if st.button("🚀 Submit"):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Suggestion based on score
+    if total_score <= 5:
+        suggestion = "You're doing fine. Keep taking care of yourself! 🌿"
+    elif total_score <= 12:
+        suggestion = "Moderate signs of stress. Consider talking to someone or using mindfulness. 🤝"
     else:
-        suggestion = "🚨 Consider seeking support from a professional or counselor."
+        suggestion = "You may be facing high mental pressure. Professional help is advised. 💬"
 
-    # Show result
-    st.markdown("### 🧾 Your Result")
-    st.markdown(f"- **Mental Health Score:** `{score}` out of `{len(questions) * 4}`")
-    st.markdown(f"- **Interpretation:** {suggestion}")
+    st.success(f"✅ Your Mental Health Score: **{total_score}/20**")
+    st.info(suggestion)
 
     # Save to CSV
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    data = [timestamp, ",".join(user_answers), total_score, suggestion, user_feedback]
     with open("user_data_log.csv", "a") as f:
-        f.write(f"{timestamp},{answers},{score},{suggestion},{feedback}\n")
+        f.write(",".join([str(x) for x in data]) + "\n")
 
-    st.success("✅ Your response has been recorded anonymously. Thank you!")
-
-# CSV download section
-# Admin section to view responses
+# Admin View
 st.markdown("---")
 if st.checkbox("👀 View All Responses (Admin Only)"):
-    try:
+    if os.path.exists("user_data_log.csv"):
         df = pd.read_csv("user_data_log.csv", header=None)
+        df = df.iloc[:, :5]
         df.columns = ["Timestamp", "Answers", "Score", "Suggestion", "Feedback"]
         st.dataframe(df)
-    except FileNotFoundError:
-        st.warning("No response data available yet.")
+    else:
+        st.info("No response data available yet.")

@@ -8,16 +8,16 @@ st.title("🧠 MindMirror: Mental Health Self-Check")
 
 st.markdown("Take this short self-assessment to reflect on your current mental state. It's completely anonymous and free.")
 
-# Updated multiple-choice options (more granular)
+# Options for each question
 options = [
-    "A. Never",
-    "B. Rarely",
-    "C. Sometimes",
-    "D. Often",
-    "E. Almost Always"
+    "A. Never",          # 0
+    "B. Rarely",         # 1
+    "C. Sometimes",      # 2
+    "D. Often",          # 3
+    "E. Almost Always"   # 4
 ]
 
-# Sample questions (can be updated after psychologist review)
+# Sample questions (to be replaced by expert-approved ones)
 questions = [
     "Do you feel overwhelmed or anxious frequently?",
     "Are you able to sleep well most nights?",
@@ -31,18 +31,19 @@ with st.form("mental_health_form"):
     st.markdown("### 📝 Self-Assessment")
 
     answers = []
+    score = 0
+
     for i, q in enumerate(questions, 1):
         ans = st.radio(f"{i}. {q}", options, key=f"q{i}")
         answers.append(ans)
+        score += options.index(ans)  # A=0, E=4
 
     feedback = st.text_area("💬 Would you like to share any feedback or thoughts?", "")
 
     submitted = st.form_submit_button("Submit")
 
     if submitted:
-        score = sum([options.index(ans) for ans in answers])  # 0 to 20
-
-        # Generate suggestion
+        # Generate suggestion based on score
         if score <= 5:
             suggestion = "✅ You're doing great! Keep maintaining your mental well-being."
         elif score <= 10:
@@ -52,15 +53,16 @@ with st.form("mental_health_form"):
         else:
             suggestion = "🚨 Consider seeking support from a professional or counselor."
 
-        # Show result to user
+        # Show result
         st.markdown(f"### 🧾 Result: **{suggestion}**")
 
-        # Save to CSV
+        # Save to CSV log
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open("user_data_log.csv", "a") as f:
             f.write(f"{timestamp},{answers},{score},{suggestion},{feedback}\n")
 
         st.success("✅ Your response has been recorded anonymously. Thank you!")
+
 # --- Form Ends ---
 
 # Admin Panel to View Logs
